@@ -27,21 +27,14 @@ class mywindow(QtWidgets.QMainWindow):
         styles = {'color': 'r', 'font-size': '20px'}
         self.ui.graphicsView.setLabel('left','Ampltitude(uV)' , **styles)
         self.ui.graphicsView.setLabel('bottom','Latency(msec)' , **styles)
+        self.label = self.ui.graphicsView.setLabel('right', **styles)
         self.ui.graphicsView.showGrid(x=True, y=True)
         font = QtGui.QFont()
         font.setPixelSize(20)
         self.ui.graphicsView.getAxis("bottom").setStyle(tickFont=font, tickTextOffset=20)
         self.ui.graphicsView.getAxis("left").setStyle(tickFont=font, tickTextOffset=20)
-        # self.label = pg.LabelItem(justify='right')
-        # self.ui.graphicsView.addItem(self.label)
 
-        # # cross hair
-        # self.vLine = pg.InfiniteLine(angle=90, movable=False)
-        # self.hLine = pg.InfiniteLine(angle=0, movable=False)
-        # self.ui.graphicsView.addItem(self.vLine, ignoreBounds=True)
-        # self.ui.graphicsView.addItem(self.hLine, ignoreBounds=True)
-
-        # self.proxy = pg.SignalProxy(self.ui.graphicsView.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
+        self.ui.graphicsView.scene().sigMouseClicked.connect(self.mouse_clicked)
 
     def select_DataFile(self):
         self.x_axis = []
@@ -84,28 +77,33 @@ class mywindow(QtWidgets.QMainWindow):
             self.y4_axis.pop(0)
             self.ui.graphicsView.setXRange(self.x_axis[1], self.x_axis[-1], padding=0)
 
-
-
-
             # # plot data: x, y values
             self.plot(self.x_axis, self.y1_axis, "RightEarRecording 1 ", 'r')
             self.plot(self.x_axis, self.y2_axis, "RightEarRecording 1 ", 'r')
             self.plot(self.x_axis, self.y3_axis, "LeftEarRecording 1 ", 'b')
             self.plot(self.x_axis, self.y4_axis, "LeftEarRecording 1 ", 'b')
 
+    def mouse_clicked(self, mouseClickEvent):
+        # mouseClickEvent is a pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
+        print('clicked plot 0x{:x}, event: {}'.format(id(self), mouseClickEvent))
 
     def mouseMoved(self, evt):
-        vb = self.ui.graphicsView.vb
-        pos = evt[0]  ## using signal proxy turns original arguments into a tuple
-        if self.ui.graphicsView.sceneBoundingRect().contains(pos):
-            mousePoint = vb.mapSceneToView(pos)
-            index = int(mousePoint.x())
-            if index > 0 and index < len(self.y1_axis):
-                self.label.setText(
-                    "<span style='font-size: 12pt'>x=%0.1f,   <span style='color: red'>y1=%0.1f</span>,   <span style='color: green'>y2=%0.1f</span>" % (
-                        mousePoint.x(), self.y1_axis[index], self.y2_axis[index]))
-            self.vLine.setPos(mousePoint.x())
-            self.hLine.setPos(mousePoint.y())
+        self.mousePoint = self.ui.graphicsView.vb.mapSceneToView(evt[0])
+        self.label.setText(
+            "<span style='font-size: 14pt; color: white'> x = %0.2f, <span style='color: white'> y = %0.2f</span>" % (
+            self.mousePoint.x(), self.mousePoint.y()))
+
+        # vb = self.ui.graphicsView.vb
+        # pos = evt[0]  ## using signal proxy turns original arguments into a tuple
+        # if self.ui.graphicsView.sceneBoundingRect().contains(pos):
+        #     mousePoint = vb.mapSceneToView(pos)
+        #     index = int(mousePoint.x())
+        #     if index > 0 and index < len(self.y1_axis):
+        #         self.label.setText(
+        #             "<span style='font-size: 12pt'>x=%0.1f,   <span style='color: red'>y1=%0.1f</span>,   <span style='color: green'>y2=%0.1f</span>" % (
+        #                 mousePoint.x(), self.y1_axis[index], self.y2_axis[index]))
+        #     self.vLine.setPos(mousePoint.x())
+        #     self.hLine.setPos(mousePoint.y())
 
 
     def open_README(self):
@@ -117,12 +115,14 @@ class mywindow(QtWidgets.QMainWindow):
     def plot(self, x, y, plotname, color):
         pen = pg.mkPen(color=color, width=2)
         self.ui.graphicsView.plot(x, y, name=plotname, pen=pen)
+        # self.proxy = pg.SignalProxy(self.ui.graphicsView.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
 
 
 
 
 
-    # def clear_Fields(self):
+
+        # def clear_Fields(self):
     #     self.ui.Continue_Button.setEnabled(False)
     #     self.ui.CAN_File_lineEdit.clear()
     #     self.ui.tableWidget.clearContents()
