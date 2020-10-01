@@ -28,7 +28,6 @@ class mywindow(QtWidgets.QMainWindow):
         self.ui.graphicsView.setBackground('w')
         self.p1 = self.ui.graphicsView.addPlot(row=0, col=0)
         self.p1.scene().sigMouseClicked.connect(self.mouse_clicked)
-        self.p1.setTitle("ABR", color="m", size="20pt")
         self.p1.getAxis("bottom").setTextPen(color='k')
         self.p1.getAxis("left").setTextPen(color='k')
         styles = {'font-size': '20px'}
@@ -39,6 +38,8 @@ class mywindow(QtWidgets.QMainWindow):
         font.setPixelSize(20)
         self.p1.getAxis("bottom").setStyle(tickFont=font, tickTextOffset=20)
         self.p1.getAxis("left").setStyle(tickFont=font, tickTextOffset=20)
+        self.p1.ctrl.fftCheck.toggled.connect(self.updateLabels)
+
 
         # Row increment variable in table widget
         self.i = 0
@@ -58,6 +59,8 @@ class mywindow(QtWidgets.QMainWindow):
         self.correlation_array_y2 = []
         self.correlation_array_y3 = []
         self.correlation_array_y4 = []
+        self.y1_y2_diff = []
+        self.y3_y4_diff = []
 
         # self.vb = self.p1.vb
 
@@ -88,10 +91,15 @@ class mywindow(QtWidgets.QMainWindow):
             self.y4_axis.pop(0)
             self.p1.setXRange(self.x_axis[1], self.x_axis[-1], padding=0)
 
+    def updateLabels(self):
+        styles = {'font-size': '20px'}
+        self.p1.setLabel('left','Ampltitude(uV)' , **styles)
+        self.p1.setLabel('bottom','Frequency' , **styles)
 
     def plot(self):
         pen_red = pg.mkPen(color='r', width=2)
         pen_blue = pg.mkPen(color='b', width=2)
+        pen_grey = pg.mkPen(width=2)
         if self.ui.Right_Ear_Rec_1.isChecked():
             self.p1.plot(self.x_axis, self.y1_axis, pen=pen_red)
         if self.ui.Right_Ear_Rec_2.isChecked():
@@ -116,10 +124,17 @@ class mywindow(QtWidgets.QMainWindow):
             correlation_2 = (np.corrcoef(self.correlation_array_y3, self.correlation_array_y4))
             # print(correlation_1[1][0])
             if self.ui.Right_Ear_Rec_1.isChecked() and self.ui.Right_Ear_Rec_2.isChecked():
-                self.ui.lineEdit.setText(str(correlation_1[1][0]))
+                self.ui.lineEdit.setText(str(format(correlation_1[1][0], '.2f')))
             elif self.ui.Left_Ear_Rec_1.isChecked() and self.ui.Left_Ear_Rec_2.isChecked():
-                self.ui.lineEdit.setText(str(correlation_2[1][0]))
+                self.ui.lineEdit.setText(str(format(correlation_2[1][0], '.2f')))
 
+        if self.ui.Diff_Checkbox.isChecked() and self.ui.Right_Ear_Rec_1.isChecked() and self.ui.Right_Ear_Rec_2.isChecked():
+            self.y1_y2_diff = np.subtract(self.y1_axis, self.y2_axis)
+            self.p1.plot(self.x_axis, self.y1_y2_diff, pen=pen_grey)
+
+        if self.ui.Diff_Checkbox.isChecked() and self.ui.Left_Ear_Rec_1.isChecked() and self.ui.Left_Ear_Rec_2.isChecked():
+            self.y3_y4_diff = np.subtract(self.y3_axis, self.y4_axis)
+            self.p1.plot(self.x_axis, self.y3_y4_diff, pen=pen_grey)
 
     def mouse_clicked(self, mouseClickEvent):
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
@@ -128,9 +143,14 @@ class mywindow(QtWidgets.QMainWindow):
         # print(self.mousePoint.x(), self.mousePoint.y(), self.mousePoint)
         x_coordinate = QTableWidgetItem(str(format(self.mousePoint.x(), '.2f')))
         y_coordinate = QTableWidgetItem(str(format(self.mousePoint.y(), '.2f')))
-        if self.i <= 6:
-            self.ui.tableWidget.setItem(0, self.i, x_coordinate)
-            self.ui.tableWidget.setItem(1, self.i, y_coordinate)
+        if self.i <= 6 and self.x_axis[-1] <= 25:
+            self.ui.First_table.setItem(0, self.i, x_coordinate)
+            self.ui.First_table.setItem(1, self.i, y_coordinate)
+            self.vLine.setPos(self.mousePoint.x())
+            self.i += 1
+        elif self.i <= 3 and self.x_axis[-1] > 25:
+            self.ui.PN_table.setItem(0, self.i, x_coordinate)
+            self.ui.PN_table.setItem(1, self.i, y_coordinate)
             self.vLine.setPos(self.mousePoint.x())
             self.i += 1
 
@@ -142,7 +162,8 @@ class mywindow(QtWidgets.QMainWindow):
 
     def clear_Fields(self):
         # self.ui.Data_File_lineEdit.clear()
-        self.ui.tableWidget.clearContents()
+        self.ui.First_table.clearContents()
+        self.ui.PN_table.clearContents()
         self.p1.clear()
         self.i = 0
         self.ui.lineEdit.clear()
@@ -156,7 +177,6 @@ class mywindow(QtWidgets.QMainWindow):
         # self.y2_axis = []
         # self.y3_axis = []
         # self.y4_axis = []
-
 
     def closeEvent(self, event):
 
