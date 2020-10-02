@@ -19,8 +19,6 @@ class mywindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.showMaximized()
         self.ui.Browse_path_Button.clicked.connect(self.select_DataFile)
-        # self.ui.actionReadMe.triggered.connect(self.open_README)
-        # self.ui.Start_Button.setEnabled(False)
         self.file_selected = False
         self.ui.Clear_PushButton.clicked.connect(self.clear_Fields)
         self.ui.Plot.clicked.connect(self.plot)
@@ -38,15 +36,13 @@ class mywindow(QtWidgets.QMainWindow):
         font.setPixelSize(20)
         self.p1.getAxis("bottom").setStyle(tickFont=font, tickTextOffset=20)
         self.p1.getAxis("left").setStyle(tickFont=font, tickTextOffset=20)
-        self.p1.ctrl.fftCheck.toggled.connect(self.updateLabels)
-
+        self.p1.ctrl.fftCheck.stateChanged.connect(self.updateLabels)
 
         # Row increment variable in table widget
         self.i = 0
         # pg.dbg()
         self.p1.setAutoVisible(y=True)
         self.vb = self.p1.vb
-
 
     def select_DataFile(self):
         self.x_axis = []
@@ -62,18 +58,15 @@ class mywindow(QtWidgets.QMainWindow):
         self.y1_y2_diff = []
         self.y3_y4_diff = []
 
-        # self.vb = self.p1.vb
 
         file_path, ext = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Data File')
         if not file_path:
-            QtWidgets.QMessageBox.about(self, 'Path required', '1. Please select a Data file!\n or\n 2. If selected click Start!')
+            QtWidgets.QMessageBox.about(self, 'Path required', '1. Please select a Data file!\n or\n 2. If selected, Select other parameters!')
             return
-        # log_file = open(file_path, 'r')
 
         if file_path:
             self.ui.Data_File_lineEdit.setText(file_path)
             self.file = file_path
-            # self.ui.DATA_ARRAY_FROM_CANLOG = open(file_path).read().splitlines()      # Read the file as an array
             # To open Workbook
             wb = xlrd.open_workbook(file_path)
             sheet = wb.sheet_by_index(0)
@@ -91,10 +84,17 @@ class mywindow(QtWidgets.QMainWindow):
             self.y4_axis.pop(0)
             self.p1.setXRange(self.x_axis[1], self.x_axis[-1], padding=0)
 
-    def updateLabels(self):
-        styles = {'font-size': '20px'}
-        self.p1.setLabel('left','Ampltitude(uV)' , **styles)
-        self.p1.setLabel('bottom','Frequency' , **styles)
+    def updateLabels(self, state):
+
+        if state == QtCore.Qt.Checked:
+            styles = {'font-size': '20px'}
+            self.p1.setLabel('left','Ampltitude(uV)', **styles)
+            self.p1.setLabel('bottom','Frequency(KHz)', **styles)
+        else:
+            styles = {'font-size': '20px'}
+            self.p1.setLabel('left', 'Ampltitude(uV)', **styles)
+            self.p1.setLabel('bottom', 'Latency(msec)', **styles)
+
 
     def plot(self):
         pen_red = pg.mkPen(color='r', width=2)
